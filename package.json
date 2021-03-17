@@ -1,6 +1,6 @@
 {
-  "name": "piscina",
-  "version": "2.2.0",
+  "name": "@posthog/piscina",
+  "version": "2.2.0-posthog",
   "description": "A fast, efficient Node.js Worker Thread Pool implementation",
   "main": "./dist/src/index.js",
   "exports": {
@@ -15,17 +15,14 @@
     "test-only": "tap",
     "prepack": "npm run build"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/piscinajs/piscina.git"
-  },
   "keywords": [
     "fast",
     "worker threads",
     "thread pool",
     "wade wilson"
   ],
-  "author": "James M Snell <jasnell@gmail.com>",
+  "author": "PostHog <hey@posthog.com>",
+  "repository": "https://github.com/PostHog/piscina",
   "contributors": [
     "Anna Henningsen <anna@addaleax.net>",
     "Matteo Collina <matteo.collina@gmail.com>"
