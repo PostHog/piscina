@@ -1011,8 +1011,7 @@ class Piscina extends EventEmitterAsyncResource {
       transferList,
       filename,
       name,
-      signal,
-      workerInfo
+      signal
     } = options;
     if (transferList !== undefined && !Array.isArray(transferList)) {
       return Promise.reject(
@@ -1029,7 +1028,7 @@ class Piscina extends EventEmitterAsyncResource {
       return Promise.reject(
         new TypeError('signal argument must be an object'));
     }
-    return this.#pool.runTask(task, { transferList, filename, name, signal, workerInfo });
+    return this.#pool.runTask(task, { transferList, filename, name, signal });
   }
 
   broadcastTask (task : any, transferList? : TransferList, filename? : string, signal? : AbortSignalAny) : Promise<any[]>;
@@ -1041,7 +1040,7 @@ class Piscina extends EventEmitterAsyncResource {
     const promises = [];
 
     for (const workerInfo of this.#pool.workers) {
-      promises.push(this.run(task, {transferList, filename, signal, workerInfo}));
+      promises.push(this.#pool.runTask(task, {transferList, filename, signal, workerInfo}));
     }
 
     return Promise.all(promises);
