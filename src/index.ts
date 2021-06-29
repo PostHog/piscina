@@ -153,6 +153,7 @@ interface RunOptions {
   filename? : string | null,
   signal? : AbortSignalAny | null,
   name? : string | null
+  workerInfo?: WorkerInfo | null
 }
 
 interface FilledRunOptions extends RunOptions {
@@ -732,7 +733,8 @@ class ThreadPool {
     options : RunOptions) : Promise<any> {
     let {
       filename,
-      name
+      name,
+      workerInfo
     } = options;
     const {
       transferList = [],
@@ -816,34 +818,37 @@ class ThreadPool {
       return ret;
     }
 
-    // Look for a Worker with a minimum number of tasks it is currently running.
-    let workerInfo : WorkerInfo | null = this.workers.findAvailable();
+    if (!workerInfo) {
+      // Look for a Worker with a minimum number of tasks it is currently running.
+      workerInfo = this.workers.findAvailable();
 
-    // If we want the ability to abort this task, use only workers that have
-    // no running tasks.
-    if (workerInfo !== null && workerInfo.currentUsage() > 0 && signal) {
-      workerInfo = null;
-    }
-
-    // If no Worker was found, or that Worker was handling another task in some
-    // way, and we still have the ability to spawn new threads, do so.
-    let waitingForNewWorker = false;
-    if ((workerInfo === null || workerInfo.currentUsage() > 0) &&
-        this.workers.size < this.options.maxThreads) {
-      this._addNewWorker();
-      waitingForNewWorker = true;
-    }
-
-    // If no Worker is found, try to put the task into the queue.
-    if (workerInfo === null) {
-      if (this.options.maxQueue <= 0 && !waitingForNewWorker) {
-        return Promise.reject(Errors.NoTaskQueueAvailable());
-      } else {
-        this.taskQueue.push(taskInfo);
+      // If we want the ability to abort this task, use only workers that have
+      // no running tasks.
+      if (workerInfo !== null && workerInfo.currentUsage() > 0 && signal) {
+        workerInfo = null;
       }
 
-      return ret;
+      // If no Worker was found, or that Worker was handling another task in some
+      // way, and we still have the ability to spawn new threads, do so.
+      let waitingForNewWorker = false;
+      if ((workerInfo === null || workerInfo.currentUsage() > 0) &&
+          this.workers.size < this.options.maxThreads) {
+        this._addNewWorker();
+        waitingForNewWorker = true;
+      }
+
+      // If no Worker is found, try to put the task into the queue.
+      if (workerInfo === null) {
+        if (this.options.maxQueue <= 0 && !waitingForNewWorker) {
+          return Promise.reject(Errors.NoTaskQueueAvailable());
+        } else {
+          this.taskQueue.push(taskInfo);
+        }
+
+        return ret;
+      }
     }
+
 
     // TODO(addaleax): Clean up the waitTime/runTime recording.
     const now = performance.now();
@@ -1006,7 +1011,8 @@ class Piscina extends EventEmitterAsyncResource {
       transferList,
       filename,
       name,
-      signal
+      signal,
+      workerInfo
     } = options;
     if (transferList !== undefined && !Array.isArray(transferList)) {
       return Promise.reject(
@@ -1023,7 +1029,22 @@ class Piscina extends EventEmitterAsyncResource {
       return Promise.reject(
         new TypeError('signal argument must be an object'));
     }
-    return this.#pool.runTask(task, { transferList, filename, name, signal });
+    return this.#pool.runTask(task, { transferList, filename, name, signal, workerInfo });
+  }
+
+  broadcastTask (task : any, transferList? : TransferList, filename? : string, signal? : AbortSignalAny) : Promise<any[]>;
+  broadcastTask (task : any, transferList? : TransferList, filename? : AbortSignalAny, signal? : undefined) : Promise<any[]>;
+  broadcastTask (task : any, transferList? : string, filename? : AbortSignalAny, signal? : undefined) : Promise<any[]>;
+  broadcastTask (task : any, transferList? : AbortSignalAny, filename? : undefined, signal? : undefined) : Promise<any[]>;
+
+  broadcastTask (task : any, transferList? : any, filename? : any, signal? : any) {
+    const promises = [];
+
+    for (const workerInfo of this.#pool.workers) {
+      promises.push(this.run(task, {transferList, filename, signal, workerInfo}));
+    }
+
+    return Promise.all(promises);
   }
 
   destroy () {
