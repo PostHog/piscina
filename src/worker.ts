@@ -113,11 +113,17 @@ function atomicsWaitLoop (port : MessagePort, sharedBuffer : Int32Array) {
   // The one catch is that this stops asynchronous operations that are still
   // running from proceeding. Generally, tasks should not spawn asynchronous
   // operations without waiting for them to finish, though.
-  while (currentTasks === 0) {
+  if (currentTasks === 0) {
     // Check whether there are new messages by testing whether the current
     // number of requests posted by the parent thread matches the number of
     // requests received.
-    Atomics.wait(sharedBuffer, kRequestCountField, lastSeenRequestCount);
+    const waitResult = Atomics.wait(sharedBuffer, kRequestCountField, lastSeenRequestCount, 5000);
+    if (waitResult === 'timed-out') {
+      setTimeout(() => {
+        atomicsWaitLoop(port, sharedBuffer)
+      }, 100)
+      return
+    }
     lastSeenRequestCount = Atomics.load(sharedBuffer, kRequestCountField);
 
     // We have to read messages *after* updating lastSeenRequestCount in order
