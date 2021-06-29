@@ -849,7 +849,6 @@ class ThreadPool {
       }
     }
 
-
     // TODO(addaleax): Clean up the waitTime/runTime recording.
     const now = performance.now();
     this.waitTime.recordValue(now - taskInfo.created);
@@ -1040,7 +1039,7 @@ class Piscina extends EventEmitterAsyncResource {
     const promises = [];
 
     for (const workerInfo of this.#pool.workers) {
-      promises.push(this.#pool.runTask(task, {transferList, filename, signal, workerInfo}));
+      promises.push(this.#pool.runTask(task, { transferList, filename, signal, workerInfo }));
     }
 
     return Promise.all(promises);
