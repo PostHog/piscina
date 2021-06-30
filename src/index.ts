@@ -130,6 +130,7 @@ interface FilledOptions extends Options {
   useAtomics: boolean,
   taskQueue : TaskQueue,
   niceIncrement : number
+  atomicsTimeout : number
 }
 
 const kDefaultOptions : FilledOptions = {
@@ -142,7 +143,8 @@ const kDefaultOptions : FilledOptions = {
   useAtomics: true,
   taskQueue: new ArrayTaskQueue(),
   niceIncrement: 0,
-  trackUnmanagedFds: true
+  trackUnmanagedFds: true,
+  atomicsTimeout: 5000
 };
 
 class DirectlyTransferable implements Transferable {
@@ -558,7 +560,8 @@ class ThreadPool {
       port: port2,
       sharedBuffer: workerInfo.sharedBuffer,
       useAtomics: this.options.useAtomics,
-      niceIncrement: this.options.niceIncrement
+      niceIncrement: this.options.niceIncrement,
+      atomicsTimeout: this.options.atomicsTimeout
     };
     worker.postMessage(message, [port2]);
 

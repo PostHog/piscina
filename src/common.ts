@@ -6,6 +6,7 @@ export interface StartupMessage {
   sharedBuffer : Int32Array;
   useAtomics : boolean;
   niceIncrement : number;
+  atomicsTimeout : number;
 }
 
 export interface RequestMessage {

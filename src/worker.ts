@@ -18,6 +18,7 @@ commonState.workerData = workerData;
 
 const handlerCache : Map<string, Function> = new Map();
 let useAtomics : boolean = true;
+let atomicsTimeout : number = 5000;
 
 // Get `import(x)` as a function that isn't transpiled to `require(x)` by
 // TypeScript for dual ESM/CJS support.
@@ -75,6 +76,7 @@ async function getHandler (filename : string) : Promise<Function | null> {
 // (so we can pre-load and cache the handler).
 parentPort!.on('message', (message : StartupMessage) => {
   useAtomics = message.useAtomics;
+  atomicsTimeout = message.atomicsTimeout;
   const { port, sharedBuffer, filename, niceIncrement } = message;
   (async function () {
     try {
@@ -117,12 +119,9 @@ function atomicsWaitLoop (port : MessagePort, sharedBuffer : Int32Array) {
     // Check whether there are new messages by testing whether the current
     // number of requests posted by the parent thread matches the number of
     // requests received.
-    const waitResult = Atomics.wait(sharedBuffer, kRequestCountField, lastSeenRequestCount, 5000);
+    const waitResult = Atomics.wait(sharedBuffer, kRequestCountField, lastSeenRequestCount, atomicsTimeout);
     if (waitResult === 'timed-out') {
-      setTimeout(() => {
-        atomicsWaitLoop(port, sharedBuffer)
-      }, 100)
-      return
+      return;
     }
     lastSeenRequestCount = Atomics.load(sharedBuffer, kRequestCountField);
 
