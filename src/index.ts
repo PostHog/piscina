@@ -118,6 +118,7 @@ interface Options {
   taskQueue? : TaskQueue,
   niceIncrement? : number,
   trackUnmanagedFds? : boolean,
+  atomicsTimeout? : number
 }
 
 interface FilledOptions extends Options {
@@ -902,6 +903,12 @@ class Piscina extends EventEmitterAsyncResource {
     if (options.trackUnmanagedFds !== undefined &&
         typeof options.trackUnmanagedFds !== 'boolean') {
       throw new TypeError('options.trackUnmanagedFds must be a boolean value');
+    }
+
+    if (options.atomicsTimeout !== undefined &&
+      (typeof options.atomicsTimeout !== 'number' ||
+       options.atomicsTimeout < 1)) {
+      throw new TypeError('options.atomicsTimeout must be a positive integer');
     }
 
     this.#pool = new ThreadPool(this, options);
