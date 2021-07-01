@@ -908,7 +908,7 @@ class Piscina extends EventEmitterAsyncResource {
     if (options.atomicsTimeout !== undefined &&
       (typeof options.atomicsTimeout !== 'number' ||
        options.atomicsTimeout < 1)) {
-      throw new TypeError('options.atomicsTimeout must be a positive integer');
+      throw new TypeError('options.atomicsTimeout must be a non-negative integer');
     }
 
     this.#pool = new ThreadPool(this, options);
