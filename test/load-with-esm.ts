@@ -14,7 +14,7 @@ test('Exports match own property names', {
   skip: process.version.startsWith('v12.') // ESM support is flagged on v12.x
 }, async ({ strictDeepEquals }) => {
   // Check that version, workerData, etc. are re-exported.
-  const exported = new Set(Object.getOwnPropertyNames(await importESM('piscina')));
+  const exported = new Set(Object.getOwnPropertyNames(await importESM('@posthog/piscina')));
   const required = new Set(Object.getOwnPropertyNames(require('../')));
 
   // Remove constructor properties + default export.
