@@ -1,4 +1,4 @@
-import Piscina from '..';
+import Piscina from '../src';
 import { test } from 'tap';
 import { version } from '../package.json';
 import { pathToFileURL } from 'url';
@@ -58,7 +58,6 @@ test('async eval() handler works', async ({ equal }) => {
   equal(result, 42);
 });
 
-<<<<<<< HEAD
 test('broadcasting works', async ({ same }) => {
   const worker = new Piscina({
     minThreads: 4,
@@ -69,10 +68,7 @@ test('broadcasting works', async ({ same }) => {
   same(result, [42, 42, 42, 42]);
 });
 
-test('filename can be provided while posting', async ({ is }) => {
-=======
 test('filename can be provided while posting', async ({ equal }) => {
->>>>>>> current
   const worker = new Piscina();
   const result = await worker.runTask(
     'Promise.resolve(42)',
