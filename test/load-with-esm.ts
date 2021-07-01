@@ -7,7 +7,7 @@ const importESM : (specifier : string) => Promise<any> =
 test('Piscina is default export', {
   skip: process.version.startsWith('v12.') // ESM support is flagged on v12.x
 }, async ({ is }) => {
-  is((await importESM('piscina')).default, require('../'));
+  is((await importESM('@posthog/piscina')).default, require('../'));
 });
 
 test('Exports match own property names', {
