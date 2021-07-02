@@ -119,6 +119,7 @@ interface Options {
   taskQueue? : TaskQueue,
   niceIncrement? : number,
   trackUnmanagedFds? : boolean,
+  atomicsTimeout? : number
 }
 
 interface FilledOptions extends Options {
@@ -132,6 +133,7 @@ interface FilledOptions extends Options {
   useAtomics: boolean,
   taskQueue : TaskQueue,
   niceIncrement : number
+  atomicsTimeout : number
 }
 
 const kDefaultOptions : FilledOptions = {
@@ -145,7 +147,8 @@ const kDefaultOptions : FilledOptions = {
   useAtomics: true,
   taskQueue: new ArrayTaskQueue(),
   niceIncrement: 0,
-  trackUnmanagedFds: true
+  trackUnmanagedFds: true,
+  atomicsTimeout: 5000
 };
 
 interface RunOptions {
@@ -591,7 +594,8 @@ class ThreadPool {
       port: port2,
       sharedBuffer: workerInfo.sharedBuffer,
       useAtomics: this.options.useAtomics,
-      niceIncrement: this.options.niceIncrement
+      niceIncrement: this.options.niceIncrement,
+      atomicsTimeout: this.options.atomicsTimeout
     };
     worker.postMessage(message, [port2]);
 
@@ -800,7 +804,7 @@ class ThreadPool {
 
     // If there is a task queue, there's no point in looking for an available
     // Worker thread. Add this task to the queue, if possible.
-    if (this.taskQueue.size > 0) {
+    if (!workerInfo && this.taskQueue.size > 0) {
       const totalCapacity = this.options.maxQueue + this.pendingCapacity();
       if (this.taskQueue.size >= totalCapacity) {
         if (this.options.maxQueue === 0) {
@@ -948,6 +952,12 @@ class Piscina extends EventEmitterAsyncResource {
     if (options.trackUnmanagedFds !== undefined &&
         typeof options.trackUnmanagedFds !== 'boolean') {
       throw new TypeError('options.trackUnmanagedFds must be a boolean value');
+    }
+
+    if (options.atomicsTimeout !== undefined &&
+      (typeof options.atomicsTimeout !== 'number' ||
+       options.atomicsTimeout < 1)) {
+      throw new TypeError('options.atomicsTimeout must be a non-negative integer');
     }
 
     this.#pool = new ThreadPool(this, options);

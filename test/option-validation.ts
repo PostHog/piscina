@@ -127,3 +127,13 @@ test('trackUnmanagedFds must be a boolean', async ({ throws }) => {
     trackUnmanagedFds: 'string'
   }) as any), /options.trackUnmanagedFds must be a boolean/);
 });
+
+test('atomicsTimeout must be non-negative integer', async ({ throws }) => {
+  throws(() => new Piscina(({
+    atomicsTimeout: -1
+  }) as any), /options.atomicsTimeout must be a non-negative integer/);
+
+  throws(() => new Piscina(({
+    atomicsTimeout: 'string'
+  }) as any), /options.atomicsTimeout must be a non-negative integer/);
+});

@@ -18,6 +18,7 @@ commonState.workerData = workerData;
 
 const handlerCache : Map<string, Function> = new Map();
 let useAtomics : boolean = true;
+let atomicsTimeout : number = 5000;
 
 // Get `import(x)` as a function that isn't transpiled to `require(x)` by
 // TypeScript for dual ESM/CJS support.
@@ -75,6 +76,7 @@ async function getHandler (filename : string, name : string) : Promise<Function 
 // (so we can pre-load and cache the handler).
 parentPort!.on('message', (message : StartupMessage) => {
   useAtomics = message.useAtomics;
+  atomicsTimeout = message.atomicsTimeout;
   const { port, sharedBuffer, filename, name, niceIncrement } = message;
   (async function () {
     try {
@@ -113,11 +115,17 @@ function atomicsWaitLoop (port : MessagePort, sharedBuffer : Int32Array) {
   // The one catch is that this stops asynchronous operations that are still
   // running from proceeding. Generally, tasks should not spawn asynchronous
   // operations without waiting for them to finish, though.
-  while (currentTasks === 0) {
+  let totalWaitTime : number = 0;
+  while (currentTasks === 0 && totalWaitTime < atomicsTimeout) {
     // Check whether there are new messages by testing whether the current
     // number of requests posted by the parent thread matches the number of
     // requests received.
-    Atomics.wait(sharedBuffer, kRequestCountField, lastSeenRequestCount);
+    const timer = new Date().getTime();
+    const waitResult = Atomics.wait(sharedBuffer, kRequestCountField, lastSeenRequestCount, atomicsTimeout);
+    totalWaitTime += (new Date().getTime() - timer);
+    if (waitResult === 'timed-out') {
+      return;
+    }
     lastSeenRequestCount = Atomics.load(sharedBuffer, kRequestCountField);
 
     // We have to read messages *after* updating lastSeenRequestCount in order

@@ -1,6 +1,6 @@
 {
-  "name": "piscina",
-  "version": "3.1.0",
+  "name": "@posthog/piscina",
+  "version": "3.2.0-posthog",
   "description": "A fast, efficient Node.js Worker Thread Pool implementation",
   "main": "./dist/src/index.js",
   "exports": {

@@ -5,12 +5,12 @@ const importESM : (specifier : string) => Promise<any> =
   eval('(specifier) => import(specifier)');
 
 test('Piscina is default export', {}, async ({ equal }) => {
-  equal((await importESM('piscina')).default, require('../'));
+  equal((await importESM('@posthog/piscina')).default, require('../'));
 });
 
 test('Exports match own property names', {}, async ({ strictSame }) => {
   // Check that version, workerData, etc. are re-exported.
-  const exported = new Set(Object.getOwnPropertyNames(await importESM('piscina')));
+  const exported = new Set(Object.getOwnPropertyNames(await importESM('@posthog/piscina')));
   const required = new Set(Object.getOwnPropertyNames(require('../')));
 
   // Remove constructor properties + default export.
