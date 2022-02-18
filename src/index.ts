@@ -343,6 +343,14 @@ class AsynchronouslyCreatedResourcePool<
     this.readyItems.delete(item);
   }
 
+  has (item: T) {
+    return this.pendingItems.has(item) || this.readyItems.has(item);
+  }
+
+  getAnyWorker () {
+    return [...Array.from(this.readyItems), ...Array.from(this.pendingItems)][0];
+  }
+
   findAvailable () : T | null {
     let minUsage = this.maximumUsage;
     let candidate = null;
@@ -467,7 +475,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
 
     try {
       this.port.postMessage(message, taskInfo.transferList);
-    } catch (err) {
+    } catch (err: any) {
       // This would mostly happen if e.g. message contains unserializable data
       // or transferList is invalid.
       taskInfo.done(err);
@@ -1012,32 +1020,39 @@ class Piscina extends EventEmitterAsyncResource {
   }
 
   run (task : any, options : RunOptions = kDefaultRunOptions) {
-    if (options === null || typeof options !== 'object') {
-      return Promise.reject(
-        new TypeError('options must be an object'));
+    const [areOptionsValid, error] = Piscina.#validateRunOptions(options);
+    if (!areOptionsValid && error) {
+      return Promise.reject(error);
     }
+
     const {
       transferList,
       filename,
       name,
       signal
     } = options;
-    if (transferList !== undefined && !Array.isArray(transferList)) {
-      return Promise.reject(
-        new TypeError('transferList argument must be an Array'));
-    }
-    if (filename != null && typeof filename !== 'string') {
-      return Promise.reject(
-        new TypeError('filename argument must be a string'));
-    }
-    if (name != null && typeof name !== 'string') {
-      return Promise.reject(new TypeError('name argument must be a string'));
-    }
-    if (signal != null && typeof signal !== 'object') {
-      return Promise.reject(
-        new TypeError('signal argument must be an object'));
-    }
+
     return this.#pool.runTask(task, { transferList, filename, name, signal });
+  }
+
+  runOnWorker (task : any, workerInfo: WorkerInfo, options : RunOptions = kDefaultRunOptions) {
+    const [areOptionsValid, error] = Piscina.#validateRunOptions(options);
+    if (!areOptionsValid && error) {
+      return Promise.reject(error);
+    }
+
+    const {
+      transferList,
+      filename,
+      name,
+      signal
+    } = options;
+
+    if (!workerInfo) {
+      return Promise.reject(new Error('Invalid workerInfo'));
+    }
+
+    return this.#pool.runTask(task, { transferList, filename, name, signal, workerInfo });
   }
 
   broadcastTask (task : any, transferList? : TransferList, filename? : string, signal? : AbortSignalAny) : Promise<any[]>;
@@ -1057,6 +1072,37 @@ class Piscina extends EventEmitterAsyncResource {
 
   destroy () {
     return this.#pool.destroy();
+  }
+
+  static #validateRunOptions (options : RunOptions): [boolean, Error | null] {
+    if (options === null || typeof options !== 'object') {
+      return [false, new TypeError('options must be an object')];
+    }
+    const {
+      transferList,
+      filename,
+      name,
+      signal
+    } = options;
+
+    if (transferList !== undefined && !Array.isArray(transferList)) {
+      return [false, new TypeError('transferList argument must be an Array')];
+    }
+    if (filename != null && typeof filename !== 'string') {
+      return [false, new TypeError('filename argument must be a string')];
+    }
+    if (name != null && typeof name !== 'string') {
+      return [false, new TypeError('name argument must be a string')];
+    }
+    if (signal != null && typeof signal !== 'object') {
+      return [false, new TypeError('signal argument must be an object')];
+    }
+
+    return [true, null];
+  }
+
+  getAnyWorker () : WorkerInfo {
+    return this.#pool.workers.getAnyWorker();
   }
 
   get options () : FilledOptions {
