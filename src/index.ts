@@ -267,7 +267,7 @@ class TaskInfo extends AsyncResource implements Task {
     return ret;
   }
 
-  done (err : Error | null, result? : any) : void {
+  done (err : any, result? : any) : void {
     this.runInAsyncScope(this.callback, null, err, result);
     this.emitDestroy(); // `TaskInfo`s are used only once.
     // If an abort signal was used, remove the listener from it when
@@ -475,7 +475,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
 
     try {
       this.port.postMessage(message, taskInfo.transferList);
-    } catch (err: any) {
+    } catch (err) {
       // This would mostly happen if e.g. message contains unserializable data
       // or transferList is invalid.
       taskInfo.done(err);
